@@ -1,0 +1,38 @@
+一、基础操作
+（1）将本地文件上传至hdfs：./bin/hadoop dfs -put /root/data.csv /
+  (2)  在hive中创建表：CREATE TABLE IF NOT EXISTS sleep(dates int,times string,score int,sleep_time int,q_sleeps float,s_sleeps float,xls float,s_times int,s_timess string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+  (3) 从HDFS把数据文件导入Hive表： load data inpath '/output/result1/part-r-00000' overwrite into table sleep;
+二、在hive中创建对应的表,并将分析的数据存入对应的表中
+(1)睡眠时长与分数的关系
+ CREATE TABLE IF NOT EXISTS demo1(score int,times int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+ insert overwrite table demo1 select score,s_times from sleep group by score,s_times order by score;
+(2)睡眠分数与轻度睡眠和深睡的关系
+ CREATE TABLE IF NOT EXISTS demo2(score int,qsleep float,ssleep float) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+ insert overwrite table demo2 select score,q_sleeps, s_sleeps from sleep group by score,q_sleeps ,s_sleeps order by score;
+(3)星期维度睡眠时长情况
+ CREATE TABLE IF NOT EXISTS demo3(day string,times int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+ insert overwrite table demo3 select dates,avg(sleep_time) from sleep group by dates order by dates;
+(4)月平均睡眠时长对比情况
+CREATE TABLE IF NOT EXISTS demo4(day string,times int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+ insert overwrite table demo4 select substring(times,1,6),avg(sleep_time) from sleep ;
+(5)8小时睡眠时长占比情况
+CREATE TABLE IF NOT EXISTS demo5(day string,times int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+ insert overwrite table demo5 select dates,avg(sleep_time) from sleep group by dates order by dates;
+(6)睡觉时间点分布
+CREATE TABLE IF NOT EXISTS demo6(day string,times int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+ insert overwrite table demo6 select s_times,count(1) from sleep group by s_times order by s_times;
+(7)起床时间点分布
+CREATE TABLE IF NOT EXISTS demo7(day string,times int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+ insert overwrite table demo7 select s_timess,count(1) from sleep group by s_times order by s_times;
+三、sqoop将hive中的数据导入到mysql
+sqoop export --connect jdbc:mysql://192.168.1.99:3306/sleep --username root --password root --table demo1 --fields-terminated-by ',' --export-dir /user/hive/warehouse/demo1
+sqoop export --connect jdbc:mysql://192.168.1.99:3306/sleep --username root --password root --table demo2 --fields-terminated-by ',' --export-dir /user/hive/warehouse/demo2
+sqoop export --connect jdbc:mysql://192.168.1.99:3306/sleep --username root --password root --table demo3 --fields-terminated-by ',' --export-dir /user/hive/warehouse/demo3
+sqoop export --connect jdbc:mysql://192.168.1.99:3306/sleep --username root --password root --table demo4 --fields-terminated-by ',' --export-dir /user/hive/warehouse/demo4
+sqoop export --connect jdbc:mysql://192.168.1.99:3306/sleep --username root --password root --table demo5 --fields-terminated-by ',' --export-dir /user/hive/warehouse/demo5
+sqoop export --connect jdbc:mysql://192.168.1.99:3306/sleep --username root --password root --table demo6 --fields-terminated-by ',' --export-dir /user/hive/warehouse/demo6
+sqoop export --connect jdbc:mysql://192.168.1.99:3306/sleep --username root --password root --table demo7 --fields-terminated-by ',' --export-dir /user/hive/warehouse/demo7
+
+
+
+
